@@ -7,11 +7,11 @@ import com.el.entity.ExecuteJob;
  * @createTime 2019-05-27
  * @description 消费者
  */
-public interface Custom<E extends ExecuteJob> {
+public interface Custom {
 
     /**
      * 消费一个产品
      */
-    void consumption(E e);
+    void consumption(ExecuteJob e);
 
 }

@@ -1,6 +1,8 @@
 package com.el.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author eddie
@@ -8,6 +10,12 @@ import lombok.Data;
  * @description 执行的任务包装
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class ExecuteJob {
+
+    private String feild;
+
+    private String x;
 
 }
