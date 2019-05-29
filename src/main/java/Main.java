@@ -35,6 +35,5 @@ public class Main {
         container.start();
 
         log.info(container.getStatus().getDesc());
-
     }
 }

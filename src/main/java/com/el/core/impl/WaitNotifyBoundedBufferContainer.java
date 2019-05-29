@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author eddie
@@ -40,9 +41,14 @@ public class WaitNotifyBoundedBufferContainer extends AbstractBoundedBufferConta
     private Producer producer;
 
     /**
-     * 默认执行睡眠时间
+     * 多线程优化 避免同一时间多条线程持有该对象 同时触发该对象的状态更改
      */
-    private static final int DEFAULT_SLEEP_SECOND_TIME = 2;
+    private AtomicBoolean shouldRun = new AtomicBoolean(false);
+
+    /**
+     * 是否为第一次启动
+     */
+    private AtomicBoolean isFirstStart = new AtomicBoolean(true);
 
     /**
      * 线程池
@@ -99,39 +105,54 @@ public class WaitNotifyBoundedBufferContainer extends AbstractBoundedBufferConta
 
     @Override
     void start0() {
-        EXECUTOR_POOL.doWork(() -> {
-            log.info("进入生产者线程");
-            while (true) {
-                synchronized (executeJos) {
-                    log.info("生产者执行生产动作");
-                    if (executeJos.size() >= maxProductSize) {
-                        log.info("以达到生产上线，等待消费者消费");
-                        executeJos.wait();
-                    }
-                    ExecuteJob product = getProducer().manufacture();
-                    executeJos.add(product);
-                    log.info("生产者生产对象 {}, 第{}个", product, executeJos.size());
-                    executeJos.notifyAll();
-                }
-            }
+        if (isFirstStart.get()){
+            shouldRun.set(true);
+            isFirstStart.set(false);
+            EXECUTOR_POOL.doWork(this::executeProducer);
+            EXECUTOR_POOL.doWork(this::executeCustom);
+        }else {
+            shouldRun.set(true);
+        }
+    }
 
-        });
-        EXECUTOR_POOL.doWork(() -> {
-            log.info("进入消费者线程");
-            while (true) {
-                synchronized (executeJos) {
-                    log.info("消费者执行消费动作");
-                    if (executeJos.size() == 0) {
-                        log.info("无可消费内容");
-                        executeJos.wait();
-                    }
-                    log.info("开始消费");
-                    ExecuteJob executeJob = executeJos.remove(0);
-                    getCustom().consumption(executeJob);
-                    log.info("消费者消费对象 {}, 剩余{}个", executeJob, executeJos.size());
-                    executeJos.notifyAll();
+    @Override
+    void stop0(){
+        //不必要立即让其他线程可见 优化程序 减少内存屏障
+        shouldRun.set(false);
+    }
+
+    private void executeProducer() throws InterruptedException {
+        log.info("进入生产者线程");
+        while (shouldRun.get()) {
+            synchronized (executeJos) {
+                log.info("生产者执行生产动作");
+                if (executeJos.size() >= maxProductSize) {
+                    log.info("以达到生产上线，等待消费者消费");
+                    executeJos.wait();
                 }
+                ExecuteJob product = getProducer().manufacture();
+                executeJos.add(product);
+                log.info("生产者生产对象 {}, 第{}个", product, executeJos.size());
+                executeJos.notifyAll();
             }
-        });
+        }
+    }
+
+    private void executeCustom() throws InterruptedException {
+        log.info("进入消费者线程");
+        while (shouldRun.get()) {
+            synchronized (executeJos) {
+                log.info("消费者执行消费动作");
+                if (executeJos.size() == 0) {
+                    log.info("无可消费内容");
+                    executeJos.wait();
+                }
+                log.info("开始消费");
+                ExecuteJob executeJob = executeJos.remove(0);
+                getCustom().consumption(executeJob);
+                log.info("消费者消费对象 {}, 剩余{}个", executeJob, executeJos.size());
+                executeJos.notifyAll();
+            }
+        }
     }
 }
