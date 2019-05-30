@@ -14,8 +14,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ExecuteJob {
 
-    private String feild;
+    private String jobName;
 
-    private String x;
+    private String jobClass;
 
 }

@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 public class Bootstrap {
 
 
-
     public static void main(String[] args) {
         waitNotifyContainerStarter();
     }
@@ -46,8 +45,8 @@ public class Bootstrap {
             container.stop();
             log.info(container.getStatus().getDesc());
             TimeUnit.SECONDS.sleep(5);
-            log.info(container.getStatus().getDesc());
             container.start();
+            log.info(container.getStatus().getDesc());
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
