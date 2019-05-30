@@ -19,7 +19,7 @@ public class Bootstrap {
     }
 
     private static void waitNotifyContainerStarter(){
-        BasicBoundedBufferContainerService container = new WaitNotifyBoundedBufferContainer(4);
+        BasicBoundedBufferContainerService container = new WaitNotifyBoundedBufferContainer(10);
         container.setCustom(e -> {
             log.info("消费信息: {}", e);
             try {
@@ -37,7 +37,9 @@ public class Bootstrap {
             }
             return new ExecuteJob("0", "2");
         });
+
         container.start();
+
         log.info(container.getStatus().getDesc());
 
         try {

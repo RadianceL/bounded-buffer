@@ -25,7 +25,7 @@ public class WaitNotifyBoundedBufferContainer extends AbstractBoundedBufferConta
     /**
      * 数据类型
      */
-    private final List<ExecuteJob> executeJos;
+    private final  List<ExecuteJob> executeJos;
 
     /**
      * 最大产品数量
@@ -126,6 +126,16 @@ public class WaitNotifyBoundedBufferContainer extends AbstractBoundedBufferConta
     void stop0(){
         //不必要立即让其他线程可见 优化程序 减少内存屏障
         shouldRun.set(false);
+    }
+
+    @Override
+    void shutDown0(){
+        log.info("当前容器[{}]停止", this.getContainerName());
+    }
+
+    @Override
+    List<ExecuteJob> shutDownImmediately0(){
+        return executeJos;
     }
 
     private void executeProducer() throws InterruptedException {
