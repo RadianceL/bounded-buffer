@@ -3,6 +3,7 @@ package com.el.core.impl;
 import com.el.entity.ExecuteJob;
 import com.el.exceptions.BasicBoundedBufferException;
 import com.el.worker.ExecutorPool;
+import com.el.worker.ExecutorPoolFactory;
 import com.el.worker.model.Custom;
 import com.el.worker.model.Producer;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -53,7 +55,7 @@ public class WaitNotifyBoundedBufferContainer extends AbstractBoundedBufferConta
     /**
      * 线程池
      */
-    private static final ExecutorPool EXECUTOR_POOL = ExecutorPool.getInstance(4, "WaitNotifyBoundedBufferContainer");
+    private static final ExecutorPool EXECUTOR_POOL = ExecutorPoolFactory.getInstance(4, "WaitNotifyBoundedBufferContainer");
 
     public WaitNotifyBoundedBufferContainer(int maxProductSize) {
         this(maxProductSize, null, null, null);
@@ -75,10 +77,12 @@ public class WaitNotifyBoundedBufferContainer extends AbstractBoundedBufferConta
         this.producer = producer;
     }
 
+    @Override
     public void setCustom(Custom custom) {
         this.custom = custom;
     }
 
+    @Override
     public void setProducer(Producer producer) {
         this.producer = producer;
     }
@@ -112,7 +116,10 @@ public class WaitNotifyBoundedBufferContainer extends AbstractBoundedBufferConta
             EXECUTOR_POOL.doWork(this::executeCustom);
         }else {
             shouldRun.set(true);
+            EXECUTOR_POOL.doWork(this::executeProducer);
+            EXECUTOR_POOL.doWork(this::executeCustom);
         }
+
     }
 
     @Override
@@ -123,6 +130,10 @@ public class WaitNotifyBoundedBufferContainer extends AbstractBoundedBufferConta
 
     private void executeProducer() throws InterruptedException {
         log.info("进入生产者线程");
+        if (!shouldRun.get()){
+            Thread.yield();
+            TimeUnit.SECONDS.sleep(5);
+        }
         while (shouldRun.get()) {
             synchronized (executeJos) {
                 log.info("生产者执行生产动作");

@@ -23,17 +23,36 @@ public final class ExecutorPool {
      */
     private Semaphore semaphore;
 
+    /**
+     * MAX线程因子
+     */
+    private static final int FACTOR = 2;
 
-    private static ConcurrentHashMap<String, ExecutorPool> singletonCache = new ConcurrentHashMap<>(8);
+    /**
+     * 线程池名字
+     */
+    private String threadName;
 
+
+    private static ExecutorPool executorPool;
+
+    /**
+     * 私有构造函数
+     * @param threadTotal   核心线程数
+     * @param nameFormat    线程名称格式
+     */
     private ExecutorPool(int threadTotal, String nameFormat){
         ThreadFactory factory = new ThreadFactoryBuilder().setNameFormat(nameFormat).build();
-        this.service = new ThreadPoolExecutor(5, 50, 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingDeque<>(1024), factory, new ThreadPoolExecutor.AbortPolicy());
-        //信号量
+        this.service = new ThreadPoolExecutor(threadTotal, threadTotal * FACTOR + 1, 5L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingDeque<>(256), factory, new ThreadPoolExecutor.AbortPolicy());
+        //初始化信号量
         this.semaphore = new Semaphore(threadTotal);
     }
 
+    /**
+     * 执行工作
+     * @param action    lambda表达式，要做的工作
+     */
     public void doWork(WorkAction action) {
         try {
             service.execute(() -> {
@@ -41,15 +60,20 @@ public final class ExecutorPool {
                     semaphore.acquire();
                     action.execute();
                 } catch (InterruptedException e) {
-                    this.shutDown();
+                    throw new BasicBoundedBufferException("线程异常: {}", e.getMessage());
+                }finally {
+                    semaphore.release();
                 }
-                semaphore.release();
             });
         }catch (BasicBoundedBufferException e){
             this.shutDown();
+            throw new BasicBoundedBufferException(e);
         }
     }
 
+    /**
+     * 关闭一个线程池
+     */
     public void shutDown(){
         try {
             service.shutdown();
@@ -63,13 +87,28 @@ public final class ExecutorPool {
         return service.isShutdown();
     }
 
-    public static ExecutorPool getInstance(int threadTotal, String threadName){
-        ExecutorPool executorPool = singletonCache.get(threadName);
+    private void setThreadName(String threadName) {
+        this.threadName = threadName;
+    }
+
+    public String getThreadName() {
+        return threadName;
+    }
+
+    /**
+     * 双重检查单例
+     * @param threadTotal   核心线程数 同时可执行线程数
+     * @param poolName      线程池名称
+     * @return
+     */
+    public static ExecutorPool getInstance(int threadTotal, String poolName){
         if(Objects.isNull(executorPool)){
             synchronized (ExecutorPool.class){
-                ExecutorPool newExecutorPool = new ExecutorPool(threadTotal, threadName.concat("-Thread-%d"));
-                singletonCache.put(threadName, newExecutorPool);
-                return newExecutorPool;
+                if (Objects.isNull(executorPool)) {
+                    ExecutorPool newExecutorPool = new ExecutorPool(threadTotal, poolName.concat("-Thread-%d"));
+                    newExecutorPool.setThreadName(poolName);
+                    executorPool = newExecutorPool;
+                }
             }
         }
         return executorPool;

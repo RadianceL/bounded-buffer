@@ -1,7 +1,6 @@
 package com.el.core.impl;
 
 import com.el.core.model.BasicBoundedBufferContainerService;
-import com.el.core.model.BoundedBufferLifeCycle;
 import com.el.entity.ExecuteJob;
 import com.el.status.BoundedBufferLifeCycleStatus;
 import lombok.extern.slf4j.Slf4j;
@@ -14,14 +13,12 @@ import java.util.List;
  * @description 基础生产消费保证容器实现
  */
 @Slf4j
-public abstract class AbstractBoundedBufferContainer implements BasicBoundedBufferContainerService, BoundedBufferLifeCycle {
+public abstract class AbstractBoundedBufferContainer implements BasicBoundedBufferContainerService {
 
     /**
      * 运行时状态
      */
     private BoundedBufferLifeCycleStatus status;
-
-
 
     /**
      * 容器名称 别名
@@ -51,7 +48,7 @@ public abstract class AbstractBoundedBufferContainer implements BasicBoundedBuff
     @Override
     public void stop() {
         stop0();
-        this.status = BoundedBufferLifeCycleStatus.SUSPEND;
+        this.status = BoundedBufferLifeCycleStatus.x;
     }
 
 
@@ -75,22 +72,22 @@ public abstract class AbstractBoundedBufferContainer implements BasicBoundedBuff
     }
 
     /**
-     * 模版方法 开始过程回调
+     * 模版方法 开始过程调用
      */
     void start0(){}
 
     /**
-     * 模版方法 暂停回调
+     * 模版方法 暂停调用
      */
     void stop0(){}
 
     /**
-     * 模版方法 结束回调
+     * 模版方法 结束调用
      */
     void shutDown0(){}
 
     /**
-     * 模版方法 立即结束回调
+     * 模版方法 立即结束调用
      */
     List<ExecuteJob> shutDownImmediately0(){return null;}
 }
