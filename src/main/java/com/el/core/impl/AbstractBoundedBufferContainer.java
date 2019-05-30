@@ -48,7 +48,7 @@ public abstract class AbstractBoundedBufferContainer implements BasicBoundedBuff
     @Override
     public void stop() {
         stop0();
-        this.status = BoundedBufferLifeCycleStatus.x;
+        this.status = BoundedBufferLifeCycleStatus.SUSPEND;
     }
 
 
