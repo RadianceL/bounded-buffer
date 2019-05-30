@@ -22,6 +22,12 @@ public interface BasicBoundedBufferContainerService extends BoundedBufferLifeCyc
     Producer getProducer();
 
     /**
+     * 设置最大生产消费数量
+     * @param maxProductSize
+     */
+    void setMaxProductSize(int maxProductSize);
+
+    /**
      * 设置一个消费者
      * @param custom
      */

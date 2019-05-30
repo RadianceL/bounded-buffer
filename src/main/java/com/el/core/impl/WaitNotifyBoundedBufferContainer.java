@@ -103,6 +103,7 @@ public class WaitNotifyBoundedBufferContainer extends AbstractBoundedBufferConta
         return this.producer;
     }
 
+    @Override
     public void setMaxProductSize(int maxProductSize) {
         this.maxProductSize = maxProductSize;
     }
