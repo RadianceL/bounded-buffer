@@ -41,11 +41,14 @@ public class Bootstrap {
 
         container.setProducer(() -> {
             try {
+                ExecuteJob executeJob = new ExecuteJob("0", "2");
+                log.info("生产消息:{}", executeJob);
                 TimeUnit.SECONDS.sleep(1);
+                return executeJob;
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }
-            return new ExecuteJob("0", "2");
+            return null;
         });
 
         container.start();

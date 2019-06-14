@@ -143,12 +143,12 @@ public class LockBoundedBufferContainer extends AbstractBoundedBufferContainer {
     private void executeProducer() throws InterruptedException {
         log.info("进入生产者线程");
         lock.lock();
-        if (!shouldRun.get()){
-            Thread.yield();
-            TimeUnit.SECONDS.sleep(5);
-        }
-        while (shouldRun.get()) {
-            try {
+        try {
+            if (!shouldRun.get()) {
+                Thread.yield();
+                TimeUnit.SECONDS.sleep(5);
+            }
+            while (shouldRun.get()) {
                 if (executeJos.size() >= maxProductSize) {
                     producerCondition.await();
                 } else {
@@ -156,10 +156,16 @@ public class LockBoundedBufferContainer extends AbstractBoundedBufferContainer {
                     executeJos.add(product);
                     customCondition.signalAll();
                 }
-            }finally {
-                lock.unlock();
+
             }
+        }finally {
+            lock.unlock();
         }
+    }
+    @Override
+    void stop0(){
+        //不必要立即让其他线程可见 优化程序 减少内存屏障
+        shouldRun.set(false);
     }
 
     private void executeCustom() throws InterruptedException {
@@ -169,8 +175,8 @@ public class LockBoundedBufferContainer extends AbstractBoundedBufferContainer {
             Thread.yield();
             TimeUnit.SECONDS.sleep(5);
         }
-        while (shouldRun.get()) {
-            try {
+        try {
+            while (shouldRun.get()) {
                 if (executeJos.size() > 0) {
                     ExecuteJob executeJob = executeJos.remove(0);
                     getCustom().consumption(executeJob);
@@ -178,9 +184,10 @@ public class LockBoundedBufferContainer extends AbstractBoundedBufferContainer {
                 } else {
                     customCondition.await();
                 }
-            }finally {
-                lock.unlock();
             }
+        }finally {
+            lock.unlock();
         }
+
     }
 }
