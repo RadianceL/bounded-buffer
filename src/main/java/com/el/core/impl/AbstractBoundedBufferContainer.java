@@ -3,6 +3,7 @@ package com.el.core.impl;
 import com.el.core.model.BasicBoundedBufferContainerService;
 import com.el.entity.ExecuteJob;
 import com.el.exceptions.BasicBoundedBufferException;
+import com.el.exceptions.BoundedBufferStatusException;
 import com.el.exceptions.BoundedBufferThreadShutdownExcetption;
 import com.el.status.BoundedBufferLifeCycleStatus;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +37,7 @@ public abstract class AbstractBoundedBufferContainer implements BasicBoundedBuff
         this.containerName = containerName;
     }
 
-    public String getContainerName() {
+    String getContainerName() {
         return this.containerName;
     }
 
@@ -48,7 +49,7 @@ public abstract class AbstractBoundedBufferContainer implements BasicBoundedBuff
                 return;
             }
             if (this.status == BoundedBufferLifeCycleStatus.STOPED){
-                throw new BoundedBufferThreadShutdownExcetption("该容器[{}]状态:[{}]，无法执行启动，只有初始状态 && 暂停状态可以执行启动", this.getContainerName(), this.status.getDesc());
+                throw new BoundedBufferStatusException("该容器[{}]状态:[{}]，无法执行启动，只有初始状态 && 暂停状态可以执行启动", this.getContainerName(), this.status.getDesc());
             }
             this.status = BoundedBufferLifeCycleStatus.STARTING;
             start0();
@@ -56,13 +57,14 @@ public abstract class AbstractBoundedBufferContainer implements BasicBoundedBuff
         }catch (BasicBoundedBufferException e){
             this.stop();
             this.status = BoundedBufferLifeCycleStatus.STOPED;
-            throw new BoundedBufferThreadShutdownExcetption("[{}]启动失败，case : [{}]", this.getContainerName(), e.getMessage());
+            throw new BoundedBufferStatusException("[{}]启动失败，case : [{}]", this.getContainerName(), e.getMessage());
         }
     }
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
         if (this.status == BoundedBufferLifeCycleStatus.RUNNING){
+            Thread.yield();
             stop0();
             this.status = BoundedBufferLifeCycleStatus.SUSPEND;
         }else {
@@ -72,8 +74,9 @@ public abstract class AbstractBoundedBufferContainer implements BasicBoundedBuff
 
 
     @Override
-    public void shutDown() {
+    public synchronized void shutDown() {
         if (this.status == BoundedBufferLifeCycleStatus.RUNNING || this.status == BoundedBufferLifeCycleStatus.SUSPEND) {
+            Thread.yield();
             this.status = BoundedBufferLifeCycleStatus.SHUTDOWN;
             shutDown0();
             this.status = BoundedBufferLifeCycleStatus.STOPED;
@@ -83,12 +86,7 @@ public abstract class AbstractBoundedBufferContainer implements BasicBoundedBuff
     }
 
     @Override
-    public BoundedBufferLifeCycleStatus getStatus() {
-        return this.status;
-    }
-
-    @Override
-    public List<ExecuteJob> shutDownImmediately() {
+    public synchronized List<ExecuteJob> shutDownImmediately() {
         if (this.status == BoundedBufferLifeCycleStatus.RUNNING || this.status == BoundedBufferLifeCycleStatus.SUSPEND) {
             //立即停止 无停止中状态
             this.status = BoundedBufferLifeCycleStatus.STOPED;
@@ -97,6 +95,11 @@ public abstract class AbstractBoundedBufferContainer implements BasicBoundedBuff
             throw new BoundedBufferThreadShutdownExcetption("该容器[{}]状态:[{}]，无法立即停止，只有运行中 && 暂停状态可以立即停止", this.getContainerName(), this.status.getDesc());
         }
 
+    }
+
+    @Override
+    public BoundedBufferLifeCycleStatus getStatus() {
+        return this.status;
     }
 
     /**

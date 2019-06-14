@@ -7,15 +7,12 @@ import com.el.entity.ExecuteJob;
  * @createTime 2019-05-27
  * @description 生产者
  */
-public interface Producer<E extends ExecuteJob> {
+public interface Producer {
 
     /**
      * 生产一个产品
      * @return
      */
     ExecuteJob manufacture();
-
-
-
 
 }

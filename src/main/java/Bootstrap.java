@@ -1,3 +1,4 @@
+import com.el.core.impl.LockBoundedBufferContainer;
 import com.el.core.impl.WaitNotifyBoundedBufferContainer;
 import com.el.core.model.BasicBoundedBufferContainerService;
 import com.el.entity.ExecuteJob;
@@ -15,11 +16,20 @@ public class Bootstrap {
 
 
     public static void main(String[] args) {
-        waitNotifyContainerStarter();
+        lockContainerStarter();
     }
 
     private static void waitNotifyContainerStarter(){
         BasicBoundedBufferContainerService container = new WaitNotifyBoundedBufferContainer(10);
+        start(container);
+    }
+
+    private static void lockContainerStarter(){
+        BasicBoundedBufferContainerService container = new LockBoundedBufferContainer(10);
+        start(container);
+    }
+
+    private static void start(BasicBoundedBufferContainerService container){
         container.setCustom(e -> {
             log.info("消费信息: {}", e);
             try {

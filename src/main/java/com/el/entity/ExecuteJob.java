@@ -14,8 +14,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ExecuteJob {
 
-    private String jobName;
+    private String name;
 
-    private String jobClass;
+    private Object value;
 
 }
