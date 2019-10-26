@@ -43,7 +43,8 @@ public final class ExecutorPool {
      */
     private ExecutorPool(int threadTotal, String nameFormat){
         ThreadFactory factory = new ThreadFactoryBuilder().setNameFormat(nameFormat).build();
-        this.service = new ThreadPoolExecutor(threadTotal, threadTotal * FACTOR + 1, 5L, TimeUnit.MILLISECONDS,
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        this.service = new ThreadPoolExecutor(threadTotal, availableProcessors * FACTOR, 5L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingDeque<>(256), factory, new ThreadPoolExecutor.AbortPolicy());
         //初始化信号量
         this.semaphore = new Semaphore(threadTotal);

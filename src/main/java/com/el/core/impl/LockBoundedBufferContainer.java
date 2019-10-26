@@ -165,7 +165,7 @@ public class LockBoundedBufferContainer extends AbstractBoundedBufferContainer {
     @Override
     void stop0(){
         //不必要立即让其他线程可见 优化程序 减少内存屏障
-        shouldRun.set(false);
+        shouldRun.lazySet(false);
     }
 
     private void executeCustom() throws InterruptedException {
@@ -188,6 +188,5 @@ public class LockBoundedBufferContainer extends AbstractBoundedBufferContainer {
         }finally {
             lock.unlock();
         }
-
     }
 }
