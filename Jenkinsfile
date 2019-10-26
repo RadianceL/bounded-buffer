@@ -1,9 +1,9 @@
 pipeline {
   agent any
   stages {
-    stage('') {
+    stage('error') {
       steps {
-        sh './usr/share/maven/bin/mvn package -Dmaven.test.skip=true'
+        sh 'mvn package -Dmaven.test.skip=true'
       }
     }
   }
